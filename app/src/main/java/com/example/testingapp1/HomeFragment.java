@@ -16,6 +16,9 @@ import com.google.android.gms.location.*;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import android.os.Looper;
+import com.google.android.gms.location.LocationRequest;
+
 
 public class HomeFragment extends Fragment {
 
@@ -50,26 +53,13 @@ public class HomeFragment extends Fragment {
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
 
-            // Request permission
+            // Request permission here
             requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
 
         } else {
             // Permission granted, fetch location
             fetchLocationAndUpdateAQI();
         }
-    }
-
-    private void fetchLocationAndUpdateAQI() {
-        fusedLocationClient.getLastLocation()
-                .addOnSuccessListener(location -> {
-                    if (location != null) {
-                        fetchAirQualityData(location.getLatitude(), location.getLongitude());
-                    } else {
-                        // Location is null, fallback or show error
-                        showError("Unable to get location");
-                    }
-                })
-                .addOnFailureListener(e -> showError("Failed to get location: " + e.getMessage()));
     }
 
     private void fetchAirQualityData(double lat, double lng) {
@@ -79,7 +69,7 @@ public class HomeFragment extends Fragment {
         googleService.getCurrentConditions(apiKey, request)
                 .enqueue(new Callback<AirQualityResponse>() {
                     @Override
-                    public void onResponse(Call<AirQualityResponse> call, Response<AirQualityResponse> response) {
+                    public void onResponse(Call<AirQualityResponse> call,  Response<AirQualityResponse> response) {
                         if (response.isSuccessful() && response.body() != null) {
                             AirQualityResponse.CurrentConditions conditions = response.body().currentConditions.get(0);
 
@@ -127,4 +117,41 @@ public class HomeFragment extends Fragment {
             }
         }
     }
+
+    private LocationCallback locationCallback = new LocationCallback() {
+        @Override
+        public void onLocationResult(LocationResult locationResult) {
+            if (locationResult == null) {
+                showError("Unable to get location");
+                return;
+            }
+            Location location = locationResult.getLastLocation();
+            fetchAirQualityData(location.getLatitude(), location.getLongitude());
+            fusedLocationClient.removeLocationUpdates(this); // stop updates after getting location
+        }
+    };
+
+    private void fetchLocationAndUpdateAQI() {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        fetchAirQualityData(location.getLatitude(), location.getLongitude());
+                    } else {
+                        // request location updates if last location is null
+                        LocationRequest locationRequest = LocationRequest.create()
+                                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                                .setInterval(10000)
+                                .setFastestInterval(5000)
+                                .setNumUpdates(1);
+                        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+                    }
+                })
+                .addOnFailureListener(e -> showError("Failed to get location: " + e.getMessage()));
+    }
+
+
 }

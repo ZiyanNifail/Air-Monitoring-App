@@ -9,7 +9,6 @@ public class AirQualityLocationRequest {
         this.longitude = longitude;
     }
 
-    // getters
     public double getLatitude() { return latitude; }
     public double getLongitude() { return longitude; }
 }

@@ -8,6 +8,5 @@ public class AirQualityResponse {
     public static class CurrentConditions {
         public int aqi;
         public String category;
-        // Add other fields as per API response
     }
 }
