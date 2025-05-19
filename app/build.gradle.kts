@@ -48,6 +48,10 @@ dependencies {
     implementation ("com.google.android.material:material:1.6.0")
     implementation ("de.hdodenhof:circleimageview:3.1.0")
 
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

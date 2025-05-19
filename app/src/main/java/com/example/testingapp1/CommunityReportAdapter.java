@@ -35,7 +35,7 @@ public class CommunityReportAdapter extends RecyclerView.Adapter<CommunityReport
         CommunityReport report = reports.get(position);
 
         // Set report data
-        holder.userAvatar.setImageResource(report.getUserAvatar());
+        holder.userAvatar.setImageResource(getAvatarResource(report.getUserAvatar()));
         holder.userName.setText(report.getUserName());
         holder.location.setText(report.getLocation());
         holder.aqiValue.setText(String.valueOf(report.getAqiValue()));
@@ -86,7 +86,7 @@ public class CommunityReportAdapter extends RecyclerView.Adapter<CommunityReport
         return reports;
     }
 
-    static class ReportViewHolder extends RecyclerView.ViewHolder {
+    public static class ReportViewHolder extends RecyclerView.ViewHolder {
         ImageView userAvatar;
         TextView userName, location, aqiValue, aqiLevel, timestamp, comment;
 
@@ -101,4 +101,16 @@ public class CommunityReportAdapter extends RecyclerView.Adapter<CommunityReport
             comment = itemView.findViewById(R.id.comment);
         }
     }
+
+    private int getAvatarResource(int avatarId) {
+        switch (avatarId) {
+            case 1: return R.drawable.avatar1;
+            case 2: return R.drawable.avatar2;
+            case 3: return R.drawable.avatar3;
+            case 4: return R.drawable.avatar4;
+            case 5: return R.drawable.avatar5;
+            default: return R.drawable.avatar_default;
+        }
+    }
+
 }

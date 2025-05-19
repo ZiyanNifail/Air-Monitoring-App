@@ -17,6 +17,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,10 +38,25 @@ public class CommunityFragment extends Fragment {
         recyclerView = view.findViewById(R.id.community_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // Initialize with mock data
-        List<CommunityReport> reports = generateMockReports();
-        adapter = new CommunityReportAdapter(reports);
-        recyclerView.setAdapter(adapter);
+        ApiService api = ApiClient.getClient().create(ApiService.class);
+        api.getCommunityReports().enqueue(new retrofit2.Callback<List<CommunityReport>>() {
+            @Override
+            public void onResponse(@NonNull retrofit2.Call<List<CommunityReport>> call, @NonNull retrofit2.Response<List<CommunityReport>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<CommunityReport> reports = response.body();
+                    adapter = new CommunityReportAdapter(reports);
+                    recyclerView.setAdapter(adapter);
+                } else {
+                    Toast.makeText(getContext(), "No reports found", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull retrofit2.Call<List<CommunityReport>> call, @NonNull Throwable t) {
+                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+
 
         // Setup Floating Action Button for new reports
         FloatingActionButton fabAddReport = view.findViewById(R.id.fab_add_report);
@@ -45,18 +65,18 @@ public class CommunityFragment extends Fragment {
         return view;
     }
 
-    private List<CommunityReport> generateMockReports() {
-        List<CommunityReport> reports = new ArrayList<>();
-        reports.add(new CommunityReport("Alex Chen", R.drawable.avatar1, "Central Park", 45, "2h ago", "Fresh morning air!"));
-        reports.add(new CommunityReport("Jamal Williams", R.drawable.avatar2, "Downtown", 78, "5h ago", "Moderate traffic today"));
-        reports.add(new CommunityReport("Priya Patel", R.drawable.avatar3, "Industrial District", 112, "1d ago", "Noticing more pollution lately"));
-
-        // Added 2 more gimmick reports
-        reports.add(new CommunityReport("Taylor Swift", R.drawable.avatar4, "Concert Venue", 65, "30m ago", "Crowd is energetic but air is okay"));
-        reports.add(new CommunityReport("Elon Musk", R.drawable.avatar5, "Rooftop Lounge", 88, "3h ago", "Smog visible from up here"));
-
-        return reports;
-    }
+//    private List<CommunityReport> generateMockReports() {
+//        List<CommunityReport> reports = new ArrayList<>();
+//        reports.add(new CommunityReport("Alex Chen", R.drawable.avatar1, "Central Park", 45, "2h ago", "Fresh morning air!"));
+//        reports.add(new CommunityReport("Jamal Williams", R.drawable.avatar2, "Downtown", 78, "5h ago", "Moderate traffic today"));
+//        reports.add(new CommunityReport("Priya Patel", R.drawable.avatar3, "Industrial District", 112, "1d ago", "Noticing more pollution lately"));
+//
+//        // Added 2 more gimmick reports
+//        reports.add(new CommunityReport("Taylor Swift", R.drawable.avatar4, "Concert Venue", 65, "30m ago", "Crowd is energetic but air is okay"));
+//        reports.add(new CommunityReport("Elon Musk", R.drawable.avatar5, "Rooftop Lounge", 88, "3h ago", "Smog visible from up here"));
+//
+//        return reports;
+//    }
 
     private void showAddReportDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());

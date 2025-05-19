@@ -8,6 +8,11 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonObject;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class AuthActivity extends AppCompatActivity {
 
@@ -34,25 +39,58 @@ public class AuthActivity extends AppCompatActivity {
     private void handleAuthAction() {
         String username = usernameInput.getText().toString().trim();
         String password = passwordInput.getText().toString().trim();
+        String email = username + "@example.com"; // optional, or add real email field
+
+        if (username.isEmpty() || password.isEmpty()) {
+            Toast.makeText(this, "Please enter credentials", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        ApiService api = ApiClient.getClient().create(ApiService.class);
 
         if (isLoginMode) {
-            // Login logic
-            if (username.equals("ziyan") && password.equals("12345678")) {
-                startActivity(new Intent(this, MainActivity.class));
-                finish();
-            } else {
-                Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show();
-            }
+            // LOGIN mode
+            api.login(username, password).enqueue(new Callback<JsonObject>() {
+                @Override
+                public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                    if (response.isSuccessful() && response.body() != null &&
+                            response.body().get("success").getAsBoolean()) {
+                        Toast.makeText(AuthActivity.this, "Login successful", Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(AuthActivity.this, MainActivity.class));
+                        finish();
+                    } else {
+                        Toast.makeText(AuthActivity.this, "Login failed", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<JsonObject> call, Throwable t) {
+                    Toast.makeText(AuthActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+
         } else {
-            // Register logic (in this simple version, same as login)
-            if (!username.isEmpty() && !password.isEmpty()) {
-                Toast.makeText(this, "Registration successful", Toast.LENGTH_SHORT).show();
-                toggleAuthMode(); // Switch back to login
-            } else {
-                Toast.makeText(this, "Please enter credentials", Toast.LENGTH_SHORT).show();
-            }
+            // REGISTER mode
+            api.register(username, email, password).enqueue(new Callback<JsonObject>() {
+                @Override
+                public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                    if (response.isSuccessful() && response.body() != null &&
+                            response.body().get("success").getAsBoolean()) {
+                        Toast.makeText(AuthActivity.this, "Registration successful", Toast.LENGTH_SHORT).show();
+                        toggleAuthMode(); // Go back to login
+                    } else {
+                        Toast.makeText(AuthActivity.this, "Registration failed", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<JsonObject> call, Throwable t) {
+                    Toast.makeText(AuthActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
         }
     }
+
 
     private void toggleAuthMode() {
         isLoginMode = !isLoginMode;
