@@ -1,68 +1,130 @@
 package com.example.testingapp1;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
-
-import java.util.Random;
+import com.google.android.gms.location.*;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class HomeFragment extends Fragment {
+
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
+
     private TextView aqiValue, aqiStatus, tempValue, humidityValue;
+    private FusedLocationProviderClient fusedLocationClient;
+    private GoogleAirQualityService googleService;
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
-        // Initialize views
         aqiValue = view.findViewById(R.id.aqi_value);
         aqiStatus = view.findViewById(R.id.aqi_status);
         tempValue = view.findViewById(R.id.temp_value);
         humidityValue = view.findViewById(R.id.humidity_value);
 
-        // Simulate data - in real app, you'd fetch from API
-        updateAirQualityData();
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+        googleService = GoogleApiClient.getClient().create(GoogleAirQualityService.class);
+
+        checkLocationPermissionAndFetch();
 
         return view;
     }
 
-    private void updateAirQualityData() {
-        Random random = new Random();
+    private void checkLocationPermissionAndFetch() {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
 
-        // Simulate AQI (0-500)
-        int aqi = random.nextInt(500);
-        aqiValue.setText(String.valueOf(aqi));
+            // Request permission
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
 
-        // Set status based on AQI
-        if (aqi <= 50) {
-            aqiStatus.setText("Good");
-            aqiStatus.setTextColor(getResources().getColor(R.color.green));
-        } else if (aqi <= 100) {
-            aqiStatus.setText("Moderate");
-            aqiStatus.setTextColor(getResources().getColor(R.color.yellow));
-        } else if (aqi <= 150) {
-            aqiStatus.setText("Unhealthy for Sensitive Groups");
-            aqiStatus.setTextColor(getResources().getColor(R.color.orange));
-        } else if (aqi <= 200) {
-            aqiStatus.setText("Unhealthy");
-            aqiStatus.setTextColor(getResources().getColor(R.color.red));
         } else {
-            aqiStatus.setText("Hazardous");
-            aqiStatus.setTextColor(getResources().getColor(R.color.purple));
+            // Permission granted, fetch location
+            fetchLocationAndUpdateAQI();
         }
+    }
 
-        // Simulate temperature (0-40°C)
-        int temp = random.nextInt(40);
-        tempValue.setText(temp + "°C");
+    private void fetchLocationAndUpdateAQI() {
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        fetchAirQualityData(location.getLatitude(), location.getLongitude());
+                    } else {
+                        // Location is null, fallback or show error
+                        showError("Unable to get location");
+                    }
+                })
+                .addOnFailureListener(e -> showError("Failed to get location: " + e.getMessage()));
+    }
 
-        // Simulate humidity (0-100%)
-        int humidity = random.nextInt(100);
-        humidityValue.setText(humidity + "%");
+    private void fetchAirQualityData(double lat, double lng) {
+        AirQualityLocationRequest request = new AirQualityLocationRequest(lat, lng);
+        String apiKey = "AIzaSyDVkvAUqf1MgHf3MVuokhuet9EubCikXLI";
+
+        googleService.getCurrentConditions(apiKey, request)
+                .enqueue(new Callback<AirQualityResponse>() {
+                    @Override
+                    public void onResponse(Call<AirQualityResponse> call, Response<AirQualityResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            AirQualityResponse.CurrentConditions conditions = response.body().currentConditions.get(0);
+
+                            int aqi = conditions.aqi;
+                            String category = conditions.category;
+
+                            aqiValue.setText(String.valueOf(aqi));
+                            aqiStatus.setText(category);
+
+                            // Set color based on AQI category
+                            // (Use same switch-case from earlier example here)
+
+                            tempValue.setText("N/A");
+                            humidityValue.setText("N/A");
+                        } else {
+                            showError("Failed to get AQI data");
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<AirQualityResponse> call, Throwable t) {
+                        showError("API call failed: " + t.getMessage());
+                    }
+                });
+    }
+
+    private void showError(String message) {
+        aqiValue.setText("N/A");
+        aqiStatus.setText(message);
+        tempValue.setText("N/A");
+        humidityValue.setText("N/A");
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                fetchLocationAndUpdateAQI();
+            } else {
+                showError("Location permission denied");
+            }
+        }
     }
 }
