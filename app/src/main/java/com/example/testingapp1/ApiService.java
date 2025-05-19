@@ -24,8 +24,5 @@ public interface ApiService {
             @Field("email") String email,
             @Field("password") String password
     );
-
-    // Google AQI API
-    POST('https://airquality.googleapis.com/v1/currentConditions:lookup?key=AIzaSyDVkvAUqf1MgHf3MVuokhuet9EubCikXLI')
-    // Google Map API
 }
+
