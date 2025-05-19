@@ -45,7 +45,7 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- Existing AQI Card (positioned below search bar) -->
+    <!-- AQI Card -->
     <androidx.cardview.widget.CardView
         android:id="@+id/card_aqi_info"
         android:layout_width="match_parent"
@@ -54,9 +54,47 @@
         android:layout_margin="16dp"
         android:visibility="gone"
         app:cardBackgroundColor="@color/dark_gray"
-        app:cardCornerRadius="8dp"
+        app:cardCornerRadius="12dp"
         app:cardElevation="8dp">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Air Quality Index"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/text_aqi_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/white"
+                    android:textSize="32sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/text_aqi_description"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:textColor="@color/white"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </LinearLayout>
     </androidx.cardview.widget.CardView>
 
 
