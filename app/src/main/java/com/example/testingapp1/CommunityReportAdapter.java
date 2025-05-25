@@ -1,7 +1,6 @@
 package com.example.testingapp1;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,7 +13,7 @@ import java.util.List;
 
 public class CommunityReportAdapter extends RecyclerView.Adapter<CommunityReportAdapter.ReportViewHolder> {
 
-    private List<CommunityReport> reports;
+    private final List<CommunityReport> reports;
     private Context context;
 
     public CommunityReportAdapter(List<CommunityReport> reports) {

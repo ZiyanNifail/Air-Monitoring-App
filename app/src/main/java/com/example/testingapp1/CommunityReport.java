@@ -1,11 +1,11 @@
 package com.example.testingapp1;
 public class CommunityReport {
-    private String userName;
-    private int userAvatar;
-    private String location;
-    private int aqiValue;
-    private String timestamp;
-    private String comment;
+    private final String userName;
+    private final int userAvatar;
+    private final String location;
+    private final int aqiValue;
+    private final String timestamp;
+    private final String comment;
 
     public CommunityReport(String userName, int userAvatar, String location,
                            int aqiValue, String timestamp, String comment) {
