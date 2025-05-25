@@ -1,13 +1,24 @@
 package com.example.testingapp1;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class RegisterActivity extends AppCompatActivity {
+    private static final int PICK_IMAGE_REQUEST = 1;
+
     private EditText regUsername, regPassword, regConfirmPassword;
+    private ImageView imagePreview;
+    private Button selectImageButton, regButton;
+    private byte[] profileImageBytes;
+
     private DatabaseHelper dbHelper;
 
     @Override
@@ -15,57 +26,76 @@ public class RegisterActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
-        // Initialize DatabaseHelper
         dbHelper = new DatabaseHelper(this);
 
-        // Initialize views
         regUsername = findViewById(R.id.reg_username);
         regPassword = findViewById(R.id.reg_password);
         regConfirmPassword = findViewById(R.id.reg_confirm_password);
-        Button regButton = findViewById(R.id.reg_button);
+        imagePreview = findViewById(R.id.image_preview);
+        selectImageButton = findViewById(R.id.select_image_button);
+        regButton = findViewById(R.id.reg_button);
 
-        // Set click listener for register button
-        regButton.setOnClickListener(v -> registerUser());
+        selectImageButton.setOnClickListener(v -> openImagePicker());
+
+        regButton.setOnClickListener(v -> handleRegister());
     }
 
-    private void registerUser() {
-        // Get input values
+    private void openImagePicker() {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivityForResult(intent, PICK_IMAGE_REQUEST);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            try {
+                InputStream iStream = getContentResolver().openInputStream(data.getData());
+                profileImageBytes = getBytes(iStream);
+                imagePreview.setImageURI(data.getData());
+            } catch (IOException e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void handleRegister() {
         String username = regUsername.getText().toString().trim();
         String password = regPassword.getText().toString().trim();
         String confirmPassword = regConfirmPassword.getText().toString().trim();
 
-        // Validate inputs
         if (username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
-            showToast("Please fill in all fields");
+            Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (!password.equals(confirmPassword)) {
-            showToast("Passwords don't match!");
-            regConfirmPassword.setError("Passwords must match");
+            Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        if (password.length() < 6) {
-            showToast("Password must be at least 6 characters");
-            regPassword.setError("Too short");
-            return;
-        }
-
-        // Register user
-        boolean registrationSuccess = dbHelper.addUser(username, password);
-
-        if (registrationSuccess) {
-            showToast("Registration successful!");
-            finish(); // Return to login screen
+        boolean success = dbHelper.addUser(username, password, profileImageBytes);
+        if (success) {
+            Toast.makeText(this, "Registration successful!", Toast.LENGTH_SHORT).show();
+            finish(); // Go back to login screen
         } else {
-            showToast("Username already exists");
-            regUsername.setError("Username taken");
+            Toast.makeText(this, "Registration failed. Username may already exist.", Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void showToast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    private byte[] getBytes(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
+        int bufferSize = 1024;
+        byte[] buffer = new byte[bufferSize];
+        int len;
+        while ((len = inputStream.read(buffer)) != -1) {
+            byteBuffer.write(buffer, 0, len);
+        }
+        return byteBuffer.toByteArray();
     }
 
     @Override

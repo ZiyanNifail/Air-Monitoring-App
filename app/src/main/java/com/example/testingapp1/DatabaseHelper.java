@@ -8,20 +8,22 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "UserAuthDB";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2; // incremented for schema change
 
     // Table and column names
     private static final String TABLE_USERS = "users";
     private static final String COLUMN_ID = "id";
     private static final String COLUMN_USERNAME = "username";
     private static final String COLUMN_PASSWORD = "password";
+    private static final String COLUMN_PROFILE_IMAGE = "profile_image"; // NEW
 
     // Create table query
     private static final String CREATE_TABLE_USERS =
             "CREATE TABLE " + TABLE_USERS + "("
                     + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
                     + COLUMN_USERNAME + " TEXT UNIQUE,"
-                    + COLUMN_PASSWORD + " TEXT"
+                    + COLUMN_PASSWORD + " TEXT,"
+                    + COLUMN_PROFILE_IMAGE + " BLOB"
                     + ")";
 
     public DatabaseHelper(Context context) {
@@ -35,16 +37,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        // Drop and recreate the table (simpler approach; production apps should migrate carefully)
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
         onCreate(db);
     }
 
-    // Register a new user
-    public boolean addUser(String username, String password) {
+    // Register a new user with profile image
+    public boolean addUser(String username, String password, byte[] profileImage) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_USERNAME, username);
-        values.put(COLUMN_PASSWORD, password); // Note: Hash passwords in production!
+        values.put(COLUMN_PASSWORD, password); // Reminder: hash passwords in production!
+        values.put(COLUMN_PROFILE_IMAGE, profileImage);
 
         long result = db.insert(TABLE_USERS, null, values);
         db.close();
@@ -63,5 +67,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cursor.close();
         db.close();
         return exists;
+    }
+
+    // Fetch user data by username (for profile page)
+    public Cursor getUserData(String username) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        return db.query(TABLE_USERS,
+                new String[]{COLUMN_USERNAME, COLUMN_PROFILE_IMAGE},
+                COLUMN_USERNAME + "=?",
+                new String[]{username},
+                null, null, null);
     }
 }

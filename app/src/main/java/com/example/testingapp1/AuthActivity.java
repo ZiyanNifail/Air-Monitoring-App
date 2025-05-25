@@ -1,6 +1,7 @@
 package com.example.testingapp1;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -50,6 +51,10 @@ public class AuthActivity extends AppCompatActivity {
         // Check credentials
         if (dbHelper.checkUser(username, password)) {
             Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
+
+            // 🔑 Save logged-in username to SharedPreferences
+            SharedPreferences prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE);
+            prefs.edit().putString("loggedInUsername", username).apply();
 
             // Navigate to MainActivity
             Intent intent = new Intent(AuthActivity.this, MainActivity.class);
