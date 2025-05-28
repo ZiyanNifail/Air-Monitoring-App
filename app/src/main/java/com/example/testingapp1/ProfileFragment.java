@@ -37,61 +37,78 @@ public class ProfileFragment extends Fragment {
         // Initialize database helper
         dbHelper = new DatabaseHelper(getContext());
 
-        // Get logged-in username from SharedPreferences
-        SharedPreferences prefs = getActivity().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-        String loggedInUsername = prefs.getString("loggedInUsername", null);
+        if (getActivity() != null) {
+            SharedPreferences prefs = getActivity().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+            String loggedInUsername = prefs.getString("loggedInUsername", null);
 
-        if (loggedInUsername != null) {
-            loadUserData(loggedInUsername);
+            if (loggedInUsername != null) {
+                loadUserData(loggedInUsername);
+            } else {
+                Toast.makeText(getContext(), "No user logged in", Toast.LENGTH_SHORT).show();
+            }
+
+            // Setup logout button listener
+            LinearLayout logoutSection = view.findViewById(R.id.logout_section);
+            if (logoutSection != null) {
+                logoutSection.setOnClickListener(v -> {
+                    // Clear saved session
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.remove("loggedInUsername");
+                    editor.apply();
+
+                    Toast.makeText(getContext(), "Logged out successfully", Toast.LENGTH_SHORT).show();
+
+                    // Navigate back to AuthActivity (login screen)
+                    Intent intent = new Intent(getActivity(), AuthActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                });
+            }
         } else {
-            Toast.makeText(getContext(), "No user logged in", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Error: Activity context not available.", Toast.LENGTH_SHORT).show();
         }
-
-        // Setup logout button listener
-        LinearLayout logoutSection = view.findViewById(R.id.logout_section);
-        logoutSection.setOnClickListener(v -> {
-            // Clear shared preferences
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.remove("loggedInUsername");
-            editor.apply();
-
-            Toast.makeText(getContext(), "Logged out successfully", Toast.LENGTH_SHORT).show();
-
-            // Navigate back to LoginActivity (replace with your actual login activity)
-            Intent intent = new Intent(getActivity(), AuthActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-        });
 
         return view;
     }
 
     private void loadUserData(String username) {
-        Cursor cursor = dbHelper.getUserData(username);
+        Cursor cursor = null;
 
-        if (cursor != null && cursor.moveToFirst()) {
-            String fetchedUsername = cursor.getString(cursor.getColumnIndex("username"));
-            byte[] imageBytes = cursor.getBlob(cursor.getColumnIndex("profile_image"));
+        try {
+            cursor = dbHelper.getUserData(username);
 
-            userName.setText(fetchedUsername);
-            userEmail.setText(username + "@app.com"); // you can update this to real email if available
+            if (cursor != null && cursor.moveToFirst()) {
+                int usernameIndex = cursor.getColumnIndex("username");
+                int imageIndex = cursor.getColumnIndex("profile_image");
 
-            if (imageBytes != null) {
-                Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-                profileImage.setImageBitmap(bitmap);
+                String fetchedUsername = (usernameIndex != -1) ? cursor.getString(usernameIndex) : "Unknown User";
+                byte[] imageBytes = (imageIndex != -1) ? cursor.getBlob(imageIndex) : null;
+
+                userName.setText(fetchedUsername);
+                userEmail.setText(username + "@app.com"); // replace with actual email if available
+
+                if (imageBytes != null) {
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                    profileImage.setImageBitmap(bitmap);
+                }
+            } else {
+                Toast.makeText(getContext(), "Failed to load user data", Toast.LENGTH_SHORT).show();
             }
-        } else {
-            Toast.makeText(getContext(), "Failed to load user data", Toast.LENGTH_SHORT).show();
-        }
-
-        if (cursor != null) {
-            cursor.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(getContext(), "Error loading user data.", Toast.LENGTH_SHORT).show();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
         }
     }
 
     @Override
     public void onDestroy() {
-        dbHelper.close();
+        if (dbHelper != null) {
+            dbHelper.close();
+        }
         super.onDestroy();
     }
 }
