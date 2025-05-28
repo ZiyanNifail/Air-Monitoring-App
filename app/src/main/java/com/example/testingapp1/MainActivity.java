@@ -1,11 +1,13 @@
 package com.example.testingapp1;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.view.MenuItem;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-
-import android.os.Bundle;
-import android.view.MenuItem;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -22,6 +24,22 @@ public class MainActivity extends AppCompatActivity {
         // Load home fragment by default
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, new HomeFragment()).commit();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        // Check login status
+        SharedPreferences prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE);
+        String loggedInUsername = prefs.getString("loggedInUsername", null);
+
+        if (loggedInUsername == null) {
+            // User not logged in → redirect to LoginActivity
+            Intent intent = new Intent(MainActivity.this,AuthActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+        }
     }
 
     private final BottomNavigationView.OnNavigationItemSelectedListener navListener =

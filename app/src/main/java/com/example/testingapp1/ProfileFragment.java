@@ -1,6 +1,7 @@
 package com.example.testingapp1;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -10,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,6 +46,22 @@ public class ProfileFragment extends Fragment {
         } else {
             Toast.makeText(getContext(), "No user logged in", Toast.LENGTH_SHORT).show();
         }
+
+        // Setup logout button listener
+        LinearLayout logoutSection = view.findViewById(R.id.logout_section);
+        logoutSection.setOnClickListener(v -> {
+            // Clear shared preferences
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.remove("loggedInUsername");
+            editor.apply();
+
+            Toast.makeText(getContext(), "Logged out successfully", Toast.LENGTH_SHORT).show();
+
+            // Navigate back to LoginActivity (replace with your actual login activity)
+            Intent intent = new Intent(getActivity(), AuthActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+        });
 
         return view;
     }
